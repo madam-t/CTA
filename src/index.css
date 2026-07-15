@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;650;700&family=Bricolage+Grotesque:ital,opsz,wght@0,12..96,200..800;1,12..96,200..800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Custom Golden Colors & Accents */
+  --color-gold-50: #fdfae7;
+  --color-gold-100: #faf1c3;
+  --color-gold-200: #f4e183;
+  --color-gold-300: #ecca41;
+  --color-gold-400: #e2b31a;
+  --color-gold-500: #D4AF37; /* Metallic Gold Accent */
+  --color-gold-600: #ae8624;
+  --color-gold-700: #84611c;
+  --color-gold-800: #594017;
+  --color-gold-900: #30200e;
+}
+
+@layer base {
+  body {
+    background-color: #000000;
+    color: #ffffff;
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+
+  /* Smooth scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #000000;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1a1a1a;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #D4AF37;
+  }
+}
+
+/* Custom glow animations and utilities */
+@keyframes goldPulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(212, 175, 55, 0.35);
+  }
+}
+
+.gold-glow-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.gold-glow-hover:hover {
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.25);
+  border-color: #D4AF37;
+}
+
+.gold-glow-button {
+  transition: all 0.2s ease-in-out;
+}
+.gold-glow-button:hover {
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.5);
+}
