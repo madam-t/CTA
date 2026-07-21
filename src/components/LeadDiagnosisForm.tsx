@@ -49,9 +49,14 @@ export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormPr
     }
   };
 
+  const isValidEmail = (emailStr: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(emailStr.trim());
+  };
+
   const handleNext = () => {
-    if (step === 1 && (!name || !email || !phone)) {
-      alert('Please fill out all contact fields to proceed.');
+    if (step === 1 && (!name || !email || !phone || !isValidEmail(email))) {
+      alert('Please fill out all contact fields with a valid email address to proceed.');
       return;
     }
     if (step === 2 && (!companyName || !companyPurpose)) {
@@ -215,24 +220,33 @@ export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormPr
                   <div className="space-y-1">
                     <label className="text-xs text-neutral-400 font-mono uppercase">Professional Email Address</label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-3.5 w-4 h-4 text-neutral-500" />
+                      <Mail className={`absolute left-4 top-3.5 w-4 h-4 ${email.length > 0 && !isValidEmail(email) ? 'text-red-500' : 'text-neutral-500'}`} />
                       <input
                         type="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="neo@ctaffiliates.com"
-                        className="w-full bg-[#1c1c1c] border border-neutral-800 focus:border-gold-500 rounded-xl py-3.5 pl-11 pr-4 text-sm text-white font-mono focus:outline-none transition-colors"
+                        className={`w-full bg-[#1c1c1c] border ${
+                          email.length > 0 && !isValidEmail(email)
+                            ? 'border-red-500 focus:border-red-500'
+                            : 'border-neutral-800 focus:border-gold-500'
+                        } rounded-xl py-3.5 pl-11 pr-4 text-sm text-white font-mono focus:outline-none transition-colors`}
                       />
                     </div>
+                    {email.length > 0 && !isValidEmail(email) && (
+                      <p className="text-xs text-red-500 font-mono mt-1">
+                        Please enter a valid email address (e.g. name@domain.com or name@domain.na).
+                      </p>
+                    )}
                   </div>
 
                   <div className="pt-4 flex justify-end">
                     <button
                       type="button"
                       onClick={handleNext}
-                      disabled={!name || !email || !phone}
-                      className="bg-gold-500 hover:bg-gold-400 disabled:bg-neutral-800 disabled:text-neutral-500 text-black px-6 py-3.5 rounded-xl text-sm font-display font-medium flex items-center gap-2 transition-all group cursor-pointer"
+                      disabled={!name || !email || !phone || !isValidEmail(email)}
+                      className="bg-gold-500 hover:bg-gold-400 disabled:bg-neutral-800 disabled:text-neutral-500 disabled:cursor-not-allowed text-black px-6 py-3.5 rounded-xl text-sm font-display font-medium flex items-center gap-2 transition-all group cursor-pointer"
                     >
                       Continue to Business Info
                       <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
