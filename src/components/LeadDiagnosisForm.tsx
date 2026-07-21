@@ -351,11 +351,10 @@ export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormPr
                   transition={{ duration: 0.2 }}
                   className="space-y-6"
                 >
-                  <div className="space-y-2">
+                  <div>
                     <h3 className="text-xl font-display font-medium text-white flex items-center gap-2">
                       <Radio className="w-5 h-5 text-gold-500 animate-pulse" /> Identify the Operations Bottleneck
                     </h3>
-                    <p className="text-xs text-neutral-400">What is the single biggest roadblock preventing you from automated scaling?</p>
                   </div>
 
                   <div className="space-y-4">
