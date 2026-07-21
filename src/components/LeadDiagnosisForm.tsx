@@ -5,7 +5,7 @@
 
 import { useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mail, Phone, User, Building, Radio, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Mail, Phone, User, Building, Radio, ArrowRight, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface LeadDiagnosisFormProps {
   onFormSuccess?: () => void;
@@ -14,6 +14,7 @@ interface LeadDiagnosisFormProps {
 export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Form Fields
   const [name, setName] = useState('');
@@ -23,6 +24,8 @@ export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormPr
   const [companyPurpose, setCompanyPurpose] = useState('');
   const [biggestChallenge, setBiggestChallenge] = useState('');
   const [weeklyWastedHours, setWeeklyWastedHours] = useState(15);
+
+  const WEB3FORMS_KEY = import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || "3e04b6f1-88db-4701-8548-ec69a4f34c61";
 
   const handleAddFieldSuggestion = (field: 'purpose' | 'challenge', value: string) => {
     if (field === 'purpose') {
@@ -50,6 +53,7 @@ export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormPr
   };
 
   const handleBack = () => {
+    setSubmitError(null);
     setStep((prev) => prev - 1);
   };
 
@@ -61,6 +65,7 @@ export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormPr
     }
 
     setLoading(true);
+    setSubmitError(null);
 
     const emailBody = `
 New Operations Diagnosis Evaluation Submission
@@ -82,58 +87,66 @@ Recipients:
 info@ctaffiliates.com, chase.s@ctaffiliates.com, madamt@ctaffiliates.com
     `.trim();
 
-    try {
-      // 1. Send via Web3Forms API (Direct frontend email delivery service)
-      const web3FormsPayload = {
-        access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || "web3forms_cta_access_key",
-        subject: `New Operations Diagnosis Request: ${name} (${companyName})`,
-        from_name: "CTA Affiliates Website",
-        to_email: "info@ctaffiliates.com, chase.s@ctaffiliates.com, madamt@ctaffiliates.com",
-        name,
-        email,
-        phone,
-        companyName,
-        companyPurpose,
-        biggestChallenge,
-        weeklyWastedHours,
-        message: emailBody,
-      };
+    const web3FormsPayload = {
+      access_key: WEB3FORMS_KEY,
+      subject: `New Operations Diagnosis Request: ${name} (${companyName})`,
+      from_name: "CTA Affiliates Website",
+      to_email: "info@ctaffiliates.com, chase.s@ctaffiliates.com, madamt@ctaffiliates.com",
+      name,
+      email,
+      phone,
+      company_name: companyName,
+      core_focus: companyPurpose,
+      bottleneck_description: biggestChallenge,
+      weekly_wasted_hours: String(weeklyWastedHours),
+      message: emailBody,
+    };
 
-      await fetch("https://api.web3forms.com/submit", {
+    try {
+      // 1. Submit via Web3Forms API
+      const res = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
         body: JSON.stringify(web3FormsPayload),
-      }).catch(() => {});
-
-      // 2. Submit as Netlify Form URL-encoded POST if hosted on Netlify
-      const netlifyParams = new URLSearchParams({
-        "form-name": "diagnosis-evaluation",
-        name,
-        email,
-        phone,
-        companyName,
-        companyPurpose,
-        biggestChallenge,
-        weeklyWastedHours: String(weeklyWastedHours),
       });
 
-      await fetch("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: netlifyParams.toString(),
-      }).catch(() => {});
+      const data = await res.json();
 
-    } catch (err) {
-      console.error("Form submission notification error:", err);
-    } finally {
-      setLoading(false);
-      setStep(4);
-      if (onFormSuccess) {
-        onFormSuccess();
+      if (data.success) {
+        // Also send to Netlify Forms asynchronously as secondary backup if hosted on Netlify
+        const netlifyParams = new URLSearchParams({
+          "form-name": "diagnosis-evaluation",
+          name,
+          email,
+          phone,
+          companyName,
+          companyPurpose,
+          biggestChallenge,
+          weeklyWastedHours: String(weeklyWastedHours),
+        });
+
+        fetch("/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: netlifyParams.toString(),
+        }).catch(() => {});
+
+        setLoading(false);
+        setStep(4);
+        if (onFormSuccess) {
+          onFormSuccess();
+        }
+      } else {
+        setLoading(false);
+        setSubmitError(data.message || "Failed to submit request via Web3Forms API. Please check details or email us directly at info@ctaffiliates.com.");
       }
+    } catch (err: any) {
+      console.error("Form submission notification error:", err);
+      setLoading(false);
+      setSubmitError(err?.message || "A network error occurred. Please check your connection and try submitting again.");
     }
   };
 
@@ -145,6 +158,7 @@ info@ctaffiliates.com, chase.s@ctaffiliates.com, madamt@ctaffiliates.com
     setCompanyPurpose('');
     setBiggestChallenge('');
     setWeeklyWastedHours(15);
+    setSubmitError(null);
     setStep(1);
   };
 
@@ -435,6 +449,16 @@ info@ctaffiliates.com, chase.s@ctaffiliates.com, madamt@ctaffiliates.com
                       </div>
                     </div>
                   </div>
+
+                  {submitError && (
+                    <div className="bg-red-950/60 border border-red-800/80 text-red-300 p-4 rounded-xl text-xs space-y-1 flex items-start gap-3 animate-fade-in">
+                      <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="font-semibold text-white block">Submission Error</span>
+                        <p className="text-red-300 leading-relaxed">{submitError}</p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="pt-4 flex justify-between">
                     <button
