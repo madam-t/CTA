@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mail, Phone, User, Building, Radio, ArrowRight, ArrowLeft, CheckCircle2, CloudLightning, Copy, Sparkles, Trash2 } from 'lucide-react';
-import { LeadSubmission } from '../types';
+import { Mail, Phone, User, Building, Radio, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 interface LeadDiagnosisFormProps {
   onFormSuccess?: () => void;
@@ -15,7 +14,6 @@ interface LeadDiagnosisFormProps {
 export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [showFirebaseNotice, setShowFirebaseNotice] = useState(false);
 
   // Form Fields
   const [name, setName] = useState('');
@@ -25,21 +23,6 @@ export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormPr
   const [companyPurpose, setCompanyPurpose] = useState('');
   const [biggestChallenge, setBiggestChallenge] = useState('');
   const [weeklyWastedHours, setWeeklyWastedHours] = useState(15);
-
-  // Saved leads list (persisted to localStorage so the client can inspect "Live Data Receipts")
-  const [leads, setLeads] = useState<LeadSubmission[]>([]);
-  const [latestSubmittedId, setLatestSubmittedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('cta_leads');
-    if (saved) {
-      try {
-        setLeads(JSON.parse(saved));
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, []);
 
   const handleAddFieldSuggestion = (field: 'purpose' | 'challenge', value: string) => {
     if (field === 'purpose') {
@@ -79,36 +62,79 @@ export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormPr
 
     setLoading(true);
 
-    const newLead: LeadSubmission = {
-      id: 'lead_' + Math.random().toString(36).substring(2, 9),
-      timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      name,
-      email,
-      phone,
-      companyName,
-      companyPurpose,
-      biggestChallenge,
-      weeklyWastedHours
-    };
+    const emailBody = `
+New Operations Diagnosis Evaluation Submission
 
-    // Simulate server write
-    setTimeout(() => {
-      const updated = [newLead, ...leads];
-      setLeads(updated);
-      localStorage.setItem('cta_leads', JSON.stringify(updated));
-      setLatestSubmittedId(newLead.id);
+Client Contact Details:
+- Name: ${name}
+- Email: ${email}
+- Phone: ${phone}
+
+Business Profile:
+- Business Name: ${companyName}
+- Core Focus / Purpose: ${companyPurpose}
+
+Operational Bottleneck & Roadblocks:
+- Bottleneck Description: ${biggestChallenge}
+- Weekly Administrative Wasted Hours: ${weeklyWastedHours} hours/week
+
+Recipients:
+info@ctaffiliates.com, chase.s@ctaffiliates.com, madamt@ctaffiliates.com
+    `.trim();
+
+    try {
+      // 1. Send via Web3Forms API (Direct frontend email delivery service)
+      const web3FormsPayload = {
+        access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY || "web3forms_cta_access_key",
+        subject: `New Operations Diagnosis Request: ${name} (${companyName})`,
+        from_name: "CTA Affiliates Website",
+        to_email: "info@ctaffiliates.com, chase.s@ctaffiliates.com, madamt@ctaffiliates.com",
+        name,
+        email,
+        phone,
+        companyName,
+        companyPurpose,
+        biggestChallenge,
+        weeklyWastedHours,
+        message: emailBody,
+      };
+
+      await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(web3FormsPayload),
+      }).catch(() => {});
+
+      // 2. Submit as Netlify Form URL-encoded POST if hosted on Netlify
+      const netlifyParams = new URLSearchParams({
+        "form-name": "diagnosis-evaluation",
+        name,
+        email,
+        phone,
+        companyName,
+        companyPurpose,
+        biggestChallenge,
+        weeklyWastedHours: String(weeklyWastedHours),
+      });
+
+      await fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: netlifyParams.toString(),
+      }).catch(() => {});
+
+    } catch (err) {
+      console.error("Form submission notification error:", err);
+    } finally {
       setLoading(false);
-      setStep(4); // Success screen
-
+      setStep(4);
       if (onFormSuccess) {
-         onFormSuccess();
+        onFormSuccess();
       }
-    }, 1200);
-  };
-
-  const clearLeads = () => {
-    setLeads([]);
-    localStorage.removeItem('cta_leads');
+    }
   };
 
   const resetForm = () => {
@@ -120,7 +146,6 @@ export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormPr
     setBiggestChallenge('');
     setWeeklyWastedHours(15);
     setStep(1);
-    setLatestSubmittedId(null);
   };
 
   return (
@@ -459,22 +484,13 @@ export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormPr
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <span className="text-[10px] font-mono text-gold-500 tracking-wider bg-gold-950/40 border border-gold-900/60 px-3 py-1 rounded-full uppercase">Form Sent Successfully</span>
                     <h3 className="text-2xl md:text-3xl font-display font-medium text-white">
                       Your System Diagnosis has been <span className="text-gold-500 italic">Initiated</span>.
                     </h3>
-                    <p className="text-sm text-neutral-400 max-w-lg mx-auto">
-                      Thank you <span className="text-white font-semibold">{name}</span>. Neo and Metumu at CTA are analyzing your bottleneck: <span className="italic text-neutral-300">"{biggestChallenge}"</span>. We will contact you at <span className="text-white font-mono">{phone}</span> shortly.
-                    </p>
-                  </div>
-
-                  <div className="bg-[#181818] border border-neutral-800 p-4 rounded-xl text-left max-w-md mx-auto space-y-2">
-                    <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest flex items-center gap-1">
-                      <CloudLightning className="w-3 h-3 text-gold-500" /> Lead Receipt Info
-                    </span>
-                    <p className="text-xs text-neutral-400 leading-relaxed">
-                      This lead has been archived. Submissions are saved to the local cache below. If the owners provision a real Firebase Firestore database, this system automatically transfers submissions there!
+                    <p className="text-sm md:text-base text-neutral-300 max-w-lg mx-auto leading-relaxed">
+                      Thank you <span className="text-white font-semibold">{name}</span>. Mr Chase and Madam T at CTA are analyzing your bottleneck. We will reach out to you shortly.
                     </p>
                   </div>
 
@@ -491,75 +507,6 @@ export default function LeadDiagnosisForm({ onFormSuccess }: LeadDiagnosisFormPr
               )}
             </AnimatePresence>
           </form>
-        </div>
-
-        {/* Live Admin Panel / Data Viewer (Digital Proof of Concept) */}
-        <div className="mt-12 bg-[#0a0a0a] border border-neutral-900 rounded-2xl p-6 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <h4 className="text-sm font-mono text-neutral-200 uppercase tracking-wider flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                SYSTEM LIVE LEADS LOGS
-              </h4>
-              <p className="text-xs text-neutral-500">
-                This is a real-time proof-of-concept visual ledger reflecting submitted leads data stored in the local simulator state.
-              </p>
-            </div>
-            {leads.length > 0 && (
-              <button
-                onClick={clearLeads}
-                className="text-[10px] uppercase font-mono text-red-500 hover:text-red-400 flex items-center gap-1 cursor-pointer transition-colors"
-                title="Wipe current local results storage cache"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Wipe Saved Leads Cache
-              </button>
-            )}
-          </div>
-
-          {leads.length === 0 ? (
-            <div className="text-center py-8 border border-dashed border-neutral-900 bg-[#070707] rounded-xl">
-              <p className="text-xs text-neutral-600 font-mono">No submissions logged in this workspace yet.</p>
-              <p className="text-[10px] text-neutral-700 mt-1">Submit the diagnosis card form above to see live structural data receipts render here.</p>
-            </div>
-          ) : (
-            <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
-              {leads.map((l) => (
-                <div
-                  key={l.id}
-                  className={`bg-[#121212] border ${latestSubmittedId === l.id ? 'border-gold-500/50' : 'border-neutral-900'} p-4 rounded-xl text-xs space-y-3 transition-colors`}
-                >
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-neutral-900 pb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="bg-gold-950 text-gold-400 font-bold px-2 py-0.5 rounded text-[9px] font-mono">
-                        {l.id}
-                      </span>
-                      <span className="text-white font-semibold font-sans">{l.name}</span>
-                      <span className="text-neutral-500 font-mono">({l.companyName})</span>
-                    </div>
-                    <span className="text-neutral-500 font-mono text-[10px]">{l.timestamp}</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-mono text-neutral-500 uppercase block">Client Contact details:</span>
-                      <p className="text-neutral-300 font-mono">Email: {l.email}</p>
-                      <p className="text-neutral-300 font-mono">Phone: {l.phone}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-mono text-neutral-500 uppercase block">Operations metadata:</span>
-                      <p className="text-neutral-300">Wastes: <strong className="text-gold-500">{l.weeklyWastedHours} hrs</strong> per week</p>
-                      <p className="text-neutral-300 truncate">Core Focus: "{l.companyPurpose}"</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#161616] p-2.5 rounded-lg border border-neutral-900 space-y-1">
-                    <span className="text-[9px] font-mono text-gold-400 uppercase block tracking-wider">Identified Roadblock Bottleneck:</span>
-                    <p className="text-neutral-300 italic">"{l.biggestChallenge}"</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
       </div>
