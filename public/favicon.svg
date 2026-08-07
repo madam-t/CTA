@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <!-- Shiny gold, matching CtaLogoIcon -->
+    <linearGradient id="ctaGold" x1="10" y1="20" x2="90" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF9E6" />
+      <stop offset="25%" stop-color="#E6C35C" />
+      <stop offset="50%" stop-color="#B38D24" />
+      <stop offset="75%" stop-color="#E6C35C" />
+      <stop offset="100%" stop-color="#A97D12" />
+    </linearGradient>
+
+    <!-- Silver: lifted from the site's charcoal so it reads against a dark tile -->
+    <linearGradient id="ctaSilver" x1="110" y1="100" x2="30" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5A5C62" />
+      <stop offset="35%" stop-color="#8B8D94" />
+      <stop offset="70%" stop-color="#BFC1C7" />
+      <stop offset="90%" stop-color="#E6E7EA" />
+      <stop offset="100%" stop-color="#9A9CA3" />
+    </linearGradient>
+  </defs>
+
+  <rect width="120" height="120" rx="26" fill="#0B0B0C" />
+
+  <!-- Logo bbox is (10,15)-(112,105); recentre and inset it inside the tile -->
+  <g transform="translate(60 60) scale(0.86) translate(-61 -60)">
+    <path
+      d="M 60 15 C 82 15, 98 29, 102 48 L 112 40 L 98 75 L 74 54 L 85 52 C 81 41, 71 31, 60 30 Z"
+      fill="url(#ctaGold)" />
+    <path
+      d="M 23 42 C 31 26, 47 16, 60 15 L 60 30 C 51 31, 41 38, 35 48 L 44 54 L 10 60 L 16 26 Z"
+      fill="url(#ctaGold)" />
+    <path
+      d="M 98 75 C 92 93, 76 105, 60 105 C 40 105, 23 92, 18 73 L 28 68 C 32 81, 44 90, 60 90 C 71 90, 81 82, 85 71 L 76 64 L 110 58 L 108 92 Z"
+      fill="url(#ctaSilver)" />
+  </g>
+</svg>
